@@ -8,7 +8,7 @@ ctk.set_appearance_mode("Dark")  # Options: "Light", "Dark", "System"
 ctk.set_default_color_theme("blue")  # Options: "blue", "green", "dark-blue"
 
 # --- Helper function for native file/directory selection ---
-def get_native_dialog_selection(prompt, file_type="file", initial_dir=None, filetypes=None):
+def get_native_dialog_selection(prompt, file_type="file", initial_dir=None):
     """
     Attempts to use zenity or kdialog for native file/directory selection on Linux.
     Returns a tuple: (selected_path, status_code)
@@ -24,8 +24,6 @@ def get_native_dialog_selection(prompt, file_type="file", initial_dir=None, file
         return (None, -1)
 
     command = []
-    zenity_filters = []
-    kdialog_filter_str = ""
 
     tool_found = False
     if shutil.which("zenity"):
@@ -36,8 +34,6 @@ def get_native_dialog_selection(prompt, file_type="file", initial_dir=None, file
         if initial_dir:
             # Zenity needs a trailing slash for initial directory to show its contents
             command.extend(["--filename", os.path.join(initial_dir, '')])
-        for f_filter in zenity_filters:
-            command.extend(["--file-filter", f_filter])
 
     # If Zenity not found, try Kdialog (Qt/KDE-based)
     elif shutil.which("kdialog"):
@@ -49,8 +45,6 @@ def get_native_dialog_selection(prompt, file_type="file", initial_dir=None, file
             command.append("--getopenfilename")
         if initial_dir:
             command.append(initial_dir)
-        if kdialog_filter_str and file_type == "file":
-            command.append(kdialog_filter_str)
 
     if not tool_found:
         return (None, -1) # No native dialog tool found
