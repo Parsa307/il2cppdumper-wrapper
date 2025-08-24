@@ -27,23 +27,6 @@ def get_native_dialog_selection(prompt, file_type="file", initial_dir=None, file
     zenity_filters = []
     kdialog_filter_str = ""
 
-    if filetypes and file_type == "file":
-        for desc, ext in filetypes:
-            # Zenity filter format: "Description | *.ext1 *.ext2"
-            zenity_filters.append(f"{desc} | *.{ext}")
-
-            # Kdialog filter format: "Description (*.ext1 *.ext2);;Description2 (*.ext3)"
-            if kdialog_filter_str:
-                kdialog_filter_str += ";;" # Kdialog uses double semicolon to separate filters
-            kdialog_filter_str += f"{desc} (*.{ext})"
-
-        # Ensure "All Files" is an option if other filters are present
-        if filetypes and not any("All Files" in f[0] for f in filetypes):
-             zenity_filters.append("All Files | *")
-             if kdialog_filter_str:
-                 kdialog_filter_str += ";;"
-             kdialog_filter_str += "All Files (*)"
-
     tool_found = False
     if shutil.which("zenity"):
         tool_found = True
