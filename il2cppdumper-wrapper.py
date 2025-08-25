@@ -77,10 +77,13 @@ class IL2CPPDumperApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
+        # Needed to avoid Hyprland issues & other issues
+        ctk.set_widget_scaling(1.0)
+        ctk.set_window_scaling(1.0)
+
+        # Initialize the Program
         self.title("IL2CPPDumper GUI Wrapper")
-        screen_width = self.winfo_screenwidth()
-        screen_height = self.winfo_screenheight()
-        self.geometry(f"{screen_width}x{screen_height}")
+        self.geometry("700x400")
 
         # Configure grid for responsive layout
         self.grid_columnconfigure(1, weight=1)
