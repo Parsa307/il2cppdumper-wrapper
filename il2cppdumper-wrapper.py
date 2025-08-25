@@ -1,7 +1,8 @@
 import customtkinter as ctk
 import subprocess
 import os
-import shutil # To check if zenity/kdialog exist on the system
+import shutil
+import threading
 
 # Set up a cool dark theme for the app!
 ctk.set_appearance_mode("Dark")  # Options: "Light", "Dark", "System"
@@ -177,23 +178,73 @@ class IL2CPPDumperApp(ctk.CTk):
         elif status == -1: # Tool not found or failed to execute
             self._log_message("Error: Could not open a native directory dialog. Please ensure 'zenity' or 'kdialog' is installed and working.", "red")
 
-    # Function to run the il2cppdumper command
-    def run_dumper(self):
-        # --- Clear the output log before starting a new run ---
-        self.output_log.configure(state="normal") # Enable to clear
-        self.output_log.delete("1.0", ctk.END) # Clear all text from the beginning to the end
-        self.output_log.configure(state="disabled") # Disable again
-
+    # --- Asynchronous Logic ---
+    def run_dumper_async(self):
+        """
+        The heavy-lifting function that runs the subprocess in a new thread.
+        All GUI updates must be done with self.after() to be thread-safe.
+        """
         exec_file = self.exec_entry.get()
         meta_file = self.meta_entry.get()
         output_dir = self.output_entry.get()
 
-        # Basic validation to ensure all fields are filled
+        # Basic validation (done on main thread before starting the thread)
+        # This part is a backup, as the main run_dumper() does the initial check.
+        if not all([exec_file, meta_file, output_dir]):
+            self.after(0, self._log_message, "Internal Error: Fields were not validated.", "red")
+            return
+
+        # Check and create output directory
+        if not os.path.isdir(output_dir):
+            try:
+                os.makedirs(output_dir, exist_ok=True)
+                self.after(0, self._log_message, f"Created output directory: {output_dir}", "info")
+            except OSError as e:
+                self.after(0, self._log_message, f"Error creating output directory '{output_dir}': {e}", "red")
+                self.after(0, self.run_button.configure, {"state": "normal"})
+                return
+
+        command = ["il2cppdumper", exec_file, meta_file, output_dir]
+        self.after(0, self._log_message, f"Preparing to run: `{' '.join(command)}`", "blue")
+
+        try:
+            process = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                check=False
+            )
+
+            if process.stdout:
+                self.after(0, self._log_message, process.stdout, "info")
+            if process.stderr:
+                self.after(0, self._log_message, f"Error (stderr): {process.stderr}", "red")
+
+            if process.returncode == 0:
+                self.after(0, self._log_message, "Command completed successfully! ✨", "green")
+            else:
+                self.after(0, self._log_message, f"Command failed with exit code {process.returncode}", "red")
+
+        except FileNotFoundError:
+            self.after(0, self._log_message, "Error: 'il2cppdumper' command not found. Please ensure it's installed and in your system's PATH.", "red")
+        except Exception as e:
+            self.after(0, self._log_message, f"An unexpected error occurred: {e}", "red")
+        finally:
+            self.after(0, lambda: self.run_button.configure(state="normal"))
+
+    def run_dumper(self):
+        """
+        The main handler for the 'Run' button.
+        It performs quick validation and starts the asynchronous process.
+        """
+        exec_file = self.exec_entry.get()
+        meta_file = self.meta_entry.get()
+        output_dir = self.output_entry.get()
+
+        # Perform initial, quick validation on the main thread
         if not all([exec_file, meta_file, output_dir]):
             self._log_message("Error: All fields must be filled!", "red")
             return
-
-        # Validate if files exist
         if not os.path.exists(exec_file):
             self._log_message(f"Error: Executable file not found at '{exec_file}'", "red")
             return
@@ -201,51 +252,17 @@ class IL2CPPDumperApp(ctk.CTk):
             self._log_message(f"Error: Metadata file not found at '{meta_file}'", "red")
             return
 
-        # Ensure output directory exists, create it if it doesn't
-        if not os.path.isdir(output_dir):
-            try:
-                os.makedirs(output_dir, exist_ok=True) # exist_ok=True prevents error if dir already exists
-                self._log_message(f"Created output directory: {output_dir}", "info")
-            except OSError as e:
-                self._log_message(f"Error creating output directory '{output_dir}': {e}", "red")
-                return
+        # Disable button to prevent multiple concurrent runs
+        self.run_button.configure(state="disabled")
 
-        # Construct the command
-        command = ["il2cppdumper", exec_file, meta_file, output_dir]
-        self._log_message(f"Preparing to run: `{' '.join(command)}`", "blue")
-
-        self.output_log.configure(state="normal") # Temporarily enable for command output
+        # Clear the output log
+        self.output_log.configure(state="normal")
+        self.output_log.delete("1.0", ctk.END)
         self.output_log.configure(state="disabled")
 
-        try:
-            # Run the command and capture its output
-            process = subprocess.run(
-                command,
-                capture_output=True, # Capture stdout and stderr
-                text=True,           # Decode stdout/stderr as text
-                check=False          # Don't raise an exception for non-zero exit codes immediately
-            )
-
-            # Log stdout and stderr from the dumper
-            if process.stdout:
-                self._log_message(process.stdout, "info") # Actual dumper output
-            if process.stderr:
-                self._log_message(f"Error (stderr): {process.stderr}", "red")
-
-            # Check the return code to determine success or failure
-            if process.returncode == 0:
-                self._log_message("Command completed successfully! ✨", "green")
-            else:
-                self._log_message(f"Command failed with exit code {process.returncode}", "red")
-
-        except FileNotFoundError:
-            self._log_message("Error: 'il2cppdumper' command not found. Please ensure it's installed and in your system's PATH.", "red")
-        except Exception as e:
-            self._log_message(f"An unexpected error occurred: {e}", "red")
-        finally:
-            self.output_log.configure(state="normal")
-            self.output_log.configure(state="disabled")
-
+        # Start the dumper in a new thread
+        dumper_thread = threading.Thread(target=self.run_dumper_async)
+        dumper_thread.start()
 
 if __name__ == "__main__":
     app = IL2CPPDumperApp()
