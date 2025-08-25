@@ -198,9 +198,9 @@ class IL2CPPDumperApp(ctk.CTk):
         if not os.path.isdir(output_dir):
             try:
                 os.makedirs(output_dir, exist_ok=True)
-                self.after(0, self._log_message, f"Created output directory: {output_dir}", "info")
+                self.after(0, self._log_message, f"Warning: Output directory doesn't exist, creating output directory: {output_dir}", "warning")
             except OSError as e:
-                self.after(0, self._log_message, f"Error creating output directory '{output_dir}': {e}", "red")
+                self.after(0, self._log_message, f"Error: creating output directory '{output_dir}': {e}", "red")
                 self.after(0, self.run_button.configure, {"state": "normal"})
                 return
 
@@ -218,7 +218,7 @@ class IL2CPPDumperApp(ctk.CTk):
             if process.stdout:
                 self.after(0, self._log_message, process.stdout, "info")
             if process.stderr:
-                self.after(0, self._log_message, f"Error (stderr): {process.stderr}", "red")
+                self.after(0, self._log_message, f"Error: (stderr): {process.stderr}", "red")
 
             if process.returncode == 0:
                 self.after(0, self._log_message, "Command completed successfully! ✨", "green")
