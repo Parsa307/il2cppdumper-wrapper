@@ -5,7 +5,7 @@ import shutil
 import threading
 
 # Set up a cool dark theme for the app!
-ctk.set_appearance_mode("Dark")  # Options: "Light", "Dark", "System"
+ctk.set_appearance_mode("System")  # Options: "Light", "Dark", "System"
 ctk.set_default_color_theme("blue")  # Options: "blue", "green", "dark-blue"
 
 # --- Helper function for native file/directory selection ---
