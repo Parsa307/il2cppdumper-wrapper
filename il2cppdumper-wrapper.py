@@ -74,7 +74,7 @@ def get_native_dialog_selection(prompt, file_type="file", initial_dir=None):
     return (None, -1)
 
 
-class IL2CPPDumperApp(ctk.CTk):
+class IL2CppDumperApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
@@ -83,7 +83,7 @@ class IL2CPPDumperApp(ctk.CTk):
         ctk.set_window_scaling(1.0)
 
         # Initialize the Program
-        self.title("IL2CPPDumper GUI Wrapper")
+        self.title("IL2CppDumper GUI Wrapper")
         self.geometry("700x400")
 
         # Configure grid for responsive layout
@@ -117,7 +117,7 @@ class IL2CPPDumperApp(ctk.CTk):
         self.output_button.grid(row=2, column=2, padx=10, pady=10)
 
         # --- Run Button ---
-        self.run_button = ctk.CTkButton(self, text="Run IL2CPPDumper", command=self.run_dumper, fg_color="green", hover_color="darkgreen")
+        self.run_button = ctk.CTkButton(self, text="Run IL2CppDumper", command=self.run_dumper, fg_color="green", hover_color="darkgreen")
         self.run_button.grid(row=3, column=0, columnspan=3, padx=10, pady=20)
 
         # --- Output Log ---
@@ -265,5 +265,5 @@ class IL2CPPDumperApp(ctk.CTk):
         dumper_thread.start()
 
 if __name__ == "__main__":
-    app = IL2CPPDumperApp()
+    app = IL2CppDumperApp()
     app.mainloop()
