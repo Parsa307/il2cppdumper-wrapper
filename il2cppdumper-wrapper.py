@@ -208,17 +208,20 @@ class IL2CppDumperApp(ctk.CTk):
         self.after(0, self._log_message, f"Preparing to run: `{' '.join(command)}`", "blue")
 
         try:
-            process = subprocess.run(
+            process = subprocess.Popen(
                 command,
-                capture_output=True,
-                text=True,
-                check=False
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True
             )
 
-            if process.stdout:
-                self.after(0, self._log_message, process.stdout, "info")
-            if process.stderr:
-                self.after(0, self._log_message, f"Error: (stderr): {process.stderr}", "red")
+            # Loop to read output line by line and update the GUI
+            for line in process.stdout:
+                # self.after() schedules the _log_message call on the main thread
+                self.after(0, self._log_message, line.strip(), "info")
+
+            # Wait for the process to finish and get the return code
+            process.wait()
 
             if process.returncode == 0:
                 self.after(0, self._log_message, "Command completed successfully! ✨", "green")
